@@ -1,38 +1,71 @@
 #include <Servo.h>
-const int buttonPin = 2;  // the number of the pushbutton pin
-const int servoPin = 3; 
+#define buttonPin 2
+#define servoPin 3
+#define s1p1 4
+#define s1p2 5
+#define s1p3 6
+#define s1p4 7
+#define s2p1 8
+#define s2p2 9
+#define s2p3 10
+#define s2p4 11
+#define ledPin 12
+
+
+//Stepper Motor Stuff
+const int stepsPerRevolution = 2048;
+
 
 int buttonState = 0;
 unsigned long start_time = millis();
 unsigned long current_time = millis();
 unsigned long time_point;
 
-Servo CarSled; 
+Servo badGuy; 
 
 void setup() {
-  // initialize the LED pin as an output:
-  pinMode(ledPin, OUTPUT);
-  // initialize the pushbutton pin as an input:
   pinMode(buttonPin, INPUT);
+  badGuy.attach(servoPin);
+  pinMode(s1p1, OUTPUT);
+  pinMode(s1p2, OUTPUT);
+  pinMode(s1p3, OUTPUT);
+  pinMode(s1p4, OUTPUT);
+  pinMode(s2p1, OUTPUT);
+  pinMode(s2p2, OUTPUT);
+  pinMode(s2p3, OUTPUT);
+  pinMode(s2p4, OUTPUT);
+  pinMode(ledPin, OUTPUT);
+
   Serial.begin(9600);
 }
 
 void loop() {
+  Serial.println("Started");
+  badGuy.write(0);
+  moveSled(false);
+  waitTillOn(buttonPin);
+  delay(1000);
+  moveSled(true);
+  badGuy.write(90);
   // read the state of the pushbutton value:
-  CarSled.write(0);
-  waitTillOn(buttonPin);
-  CarSled.write(90);
-  Serial.println("Imagine I'm Driving Foward rn");
-  delay(3000);
-  Serial.println("Woah is that a bomb?!?!?! It blew the second vehicle away!");
+  delay(5000);
   waitTillOffConsistent(buttonPin);
-  CarSled.write(180);
-  Serial.println("Driving to the major to get away");
-  delay(2000);
-  Serial.println("Waiting for both cars, facing the other way but I'll go even if they aren't");
+  badGuy.write(0);
+  delay(1000);
+  moveSled(true);
+  //rotateBackground();
+  delay(5000);
   waitTillOn(buttonPin);
-  CarSled.write(90);
-  Serial.println("This looks like a fun cafe...");
+  moveSled(false);
+  delay(4000);
+  //rotateBackground();
+  digitalWrite(ledPin, 1);
+  delay(200);
+  digitalWrite(ledPin, 0);
+  delay(1000);
+  digitalWrite(ledPin, 1);
+  delay(200);
+  digitalWrite(ledPin, 0);
 
   
   
@@ -43,6 +76,7 @@ int waitTillOn (int pinNum) {
   }
   return 1;
 }
+
 int waitTillOffConsistent(int pinNum) {
   while (true) {
     current_time = millis();
@@ -53,5 +87,81 @@ int waitTillOffConsistent(int pinNum) {
     } else {
       time_point = millis();
     }
+  }
+}
+
+void runStepper(int stepDelay, int steps, int pin1, int pin2, int pin3, int pin4) {
+  int numberOfLoops = steps / 4;
+  if (numberOfLoops < 0) {
+    for (int i = 0; i > numberOfLoops; i--) {
+      digitalWrite(pin1, LOW);
+      digitalWrite(pin2, LOW);
+      digitalWrite(pin3, LOW);
+      digitalWrite(pin4, HIGH);
+      delay(stepDelay);
+      digitalWrite(pin1, LOW);
+      digitalWrite(pin2, LOW);
+      digitalWrite(pin3, HIGH);
+      digitalWrite(pin4, LOW);
+      delay(stepDelay);
+      digitalWrite(pin1, LOW);
+      digitalWrite(pin2, HIGH);
+      digitalWrite(pin3, LOW);
+      digitalWrite(pin4, LOW);
+      delay(stepDelay);
+      digitalWrite(pin1, HIGH);
+      digitalWrite(pin2, LOW);
+      digitalWrite(pin3, LOW);
+      digitalWrite(pin4, LOW);
+      delay(stepDelay);
+      
+    }
+    digitalWrite(pin1, LOW);
+    digitalWrite(pin2, LOW);
+    digitalWrite(pin3, LOW);
+    digitalWrite(pin4, LOW);
+  }
+  else {
+    for (int i = 0; i < numberOfLoops; i++) {
+      digitalWrite(pin1, HIGH);
+      digitalWrite(pin2, LOW);
+      digitalWrite(pin3, LOW);
+      digitalWrite(pin4, LOW);
+      delay(stepDelay);
+      digitalWrite(pin1, LOW);
+      digitalWrite(pin2, HIGH);
+      digitalWrite(pin3, LOW);
+      digitalWrite(pin4, LOW);
+      delay(stepDelay);
+      digitalWrite(pin1, LOW);
+      digitalWrite(pin2, LOW);
+      digitalWrite(pin3, HIGH);
+      digitalWrite(pin4, LOW);
+      delay(stepDelay);
+      digitalWrite(pin1, LOW);
+      digitalWrite(pin2, LOW);
+      digitalWrite(pin3, LOW);
+      digitalWrite(pin4, HIGH);
+      delay(stepDelay);
+    }
+    digitalWrite(pin1, LOW);
+    digitalWrite(pin2, LOW);
+    digitalWrite(pin3, LOW);
+    digitalWrite(pin4, LOW);
+  }
+}
+
+void rotateBackground() {
+  runStepper(4, 1024, s2p1, s2p2, s2p3, s2p4);
+  delay(250);
+  runStepper(4, -340, s2p1, s2p2, s2p3, s2p4);
+}
+
+void moveSled(bool foward) {
+  if (foward) {
+    runStepper(2, -4048, s1p1, s1p2, s1p3, s1p4);
+  }
+  else {
+    runStepper(2, 4048, s1p1, s1p2, s1p3, s1p4);
   }
 }
